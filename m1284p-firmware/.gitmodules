@@ -1,0 +1,3 @@
+[submodule "ssd1306"]
+	path = ssd1306
+	url = git@github.com:alexey-medvedchikov/ssd1306.git

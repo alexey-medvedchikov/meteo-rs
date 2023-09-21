@@ -1,0 +1,22 @@
+[package]
+name = "m1284p-firmware"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+panic-halt = { version = "0", default-features = false }
+
+[dependencies.firmware]
+path = "../firmware"
+default-features = false
+
+[dependencies.avr-device]
+version = "0"
+default-features = false
+features = ["rt", "atmega1284p"]
+
+[dependencies.atmega-hal]
+git = "https://github.com/rahix/avr-hal"
+rev = "d1782c69236dcd4cb73dd1d7c414136cced86091"
+default-features = false
+features = ["atmega1284p"]

@@ -1,0 +1,14 @@
+[package]
+name = "stm32f4-firmware"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+cortex-m-rt = "0"
+panic-halt = "0"
+stm32f4xx-hal = { version = "0", default-features = false, features = ["stm32f446"] }
+fugit = { version = "0", default-features = false }
+
+[dependencies.firmware]
+path = "../firmware"
+default-features = false
