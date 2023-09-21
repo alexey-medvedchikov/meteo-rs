@@ -1,0 +1,12 @@
+[package]
+authors = ["Alexey Medvedchikov <alexey.medvedchikov@gmail.com>"]
+description = "A pure Rust implementation for the BME680 environmental sensor."
+documentation = "https://docs.rs/bme680-rs"
+license = "MIT"
+name = "bme680-rs"
+repository = "https://github.com/alexey-medvedchikov/bme680-rs"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+embedded-hal = "1"

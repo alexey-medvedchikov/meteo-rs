@@ -1,0 +1,20 @@
+[package]
+name = "firmware"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+display-interface = { version = "0", default-features = false }
+embedded-hal = { version = "1", default-features = false }
+embedded-graphics = { version = "0", default-features = false }
+ufmt = { version = "0", default-features = false }
+
+[dependencies.ssd1306]
+git = "https://github.com/rust-embedded-community/ssd1306"
+rev = "53039a806ffc77bbab0ba150d39b2a7aaa3eae03"
+default-features = false
+features = ["graphics"]
+
+[dependencies.bme680-rs]
+path = "../bme680-rs"
+default-features = false
