@@ -197,12 +197,12 @@ pub struct TemperatureSettings {
 
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct GasSettings {
+    pub heater_duration_ms: u32,
+    pub heater_temperature: u16,
+    pub ambient_temperature: i8,
     pub nb_conversion: NBConversion,
     pub heater_control: HeaterControl,
     pub enable_gas_measurement: bool,
-    pub heater_temperature: u16,
-    pub heater_duration_ms: u32,
-    pub ambient_temperature: i8,
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq)]

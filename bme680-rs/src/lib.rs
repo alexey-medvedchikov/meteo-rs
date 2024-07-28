@@ -185,14 +185,14 @@ where
     }
 
     fn set_iir_filter(&mut self, settings: &TemperatureSettings) -> Result<(), I2C::Error> {
-        let mut data = read_byte(self.i2c, self.address, CONF_ODR_FILTER_ADDR)?;
-        data = (data & !0x1c) | (((settings.iir_filter as u8) << 2) & 0x1c);
+        let data = read_byte(self.i2c, self.address, CONF_ODR_FILTER_ADDR)?;
+        let data = (data & !0x1c) | (((settings.iir_filter as u8) << 2) & 0x1c);
         self.i2c.write(self.address, &[CONF_ODR_FILTER_ADDR, data])
     }
 
     fn set_heater_control(&mut self, settings: &GasSettings) -> Result<(), I2C::Error> {
-        let mut data = read_byte(self.i2c, self.address, CONF_HEAT_CTRL_ADDR)?;
-        data = (data & !0x8) | (settings.heater_control as u8 & 0x8);
+        let data = read_byte(self.i2c, self.address, CONF_HEAT_CTRL_ADDR)?;
+        let data = (data & !0x8) | (settings.heater_control as u8 & 0x8);
         self.i2c.write(self.address, &[CONF_HEAT_CTRL_ADDR, data])
     }
 
@@ -200,9 +200,9 @@ where
         &mut self,
         settings: &TemperatureSettings,
     ) -> Result<(), I2C::Error> {
-        let mut data = read_byte(self.i2c, self.address, CONF_POWER_MODE_ADDR)?;
-        data = (data & !0xe0) | (((settings.temperature_oversampling as u8) << 5) & 0xe0);
-        data = (data & !0x1c) | (((settings.pressure_oversampling as u8) << 2) & 0x1c);
+        let data = read_byte(self.i2c, self.address, CONF_POWER_MODE_ADDR)?;
+        let data = (data & !0xe0) | (((settings.temperature_oversampling as u8) << 5) & 0xe0);
+        let data = (data & !0x1c) | (((settings.pressure_oversampling as u8) << 2) & 0x1c);
         self.i2c.write(self.address, &[CONF_POWER_MODE_ADDR, data])
     }
 
@@ -210,15 +210,15 @@ where
         &mut self,
         settings: &TemperatureSettings,
     ) -> Result<(), I2C::Error> {
-        let mut data = read_byte(self.i2c, self.address, CONF_OS_H_ADDR)?;
-        data = (data & !0x7) | (settings.humidity_oversampling as u8 & 0x7);
+        let data = read_byte(self.i2c, self.address, CONF_OS_H_ADDR)?;
+        let data = (data & !0x7) | (settings.humidity_oversampling as u8 & 0x7);
         self.i2c.write(self.address, &[CONF_OS_H_ADDR, data])
     }
 
     fn set_run_gas_and_nb_conversion(&mut self, settings: &GasSettings) -> Result<(), I2C::Error> {
-        let mut data = read_byte(self.i2c, self.address, CONF_ODR_RUN_GAS_NBC_ADDR)?;
-        data = (data & !0x10) | (((settings.enable_gas_measurement as u8) << 4) & 0x10);
-        data = (data & !0xf) | (settings.nb_conversion as u8 & 0xf);
+        let data = read_byte(self.i2c, self.address, CONF_ODR_RUN_GAS_NBC_ADDR)?;
+        let data = (data & !0x10) | (((settings.enable_gas_measurement as u8) << 4) & 0x10);
+        let data = (data & !0xf) | (settings.nb_conversion as u8 & 0xf);
         self.i2c
             .write(self.address, &[CONF_ODR_RUN_GAS_NBC_ADDR, data])
     }
@@ -294,19 +294,19 @@ where
         D: DelayMs,
     {
         loop {
-            let mut data =
+            let data =
                 read_byte(self.i2c, self.address, CONF_POWER_MODE_ADDR).map_err(Error::BusError)?;
             let power_mode = PowerMode::try_from(data & MODE_MASK)?;
 
             if power_mode != PowerMode::Sleep {
-                data &= !MODE_MASK;
+                let data = data & !MODE_MASK;
                 self.i2c
                     .write(self.address, &[CONF_POWER_MODE_ADDR, data])
                     .map_err(Error::BusError)?;
                 delay.delay_ms(POLL_PERIOD_MS);
             } else {
                 if target_power_mode != PowerMode::Sleep {
-                    data = data & !MODE_MASK | u8::from(target_power_mode);
+                    let data = data & !MODE_MASK | u8::from(target_power_mode);
                     self.i2c
                         .write(self.address, &[CONF_POWER_MODE_ADDR, data])
                         .map_err(Error::BusError)?;
@@ -420,40 +420,40 @@ where
         let new_data_mask = buf[0] & NEW_DATA_MASK;
         let status = new_data_mask | (buf[14] & (GASM_VALID_MASK | HEAT_STAB_MASK));
 
-        if new_data_mask != 0 {
-            let adc_pressure =
-                ((buf[2] as u32) * 4096) | ((buf[3] as u32) * 16) | ((buf[4] as u32) * 16);
-            let adc_temperature =
-                ((buf[5] as u32) * 4096) | ((buf[6] as u32) * 16) | ((buf[7] as u32) * 16);
-            let adc_humidity = ((buf[8] as u32) * 256) | buf[9] as u32;
-            let adc_gas_resistance = ((buf[13] as u32) * 4) | ((buf[14] as u32) * 64);
-            let gas_range = buf[14] & GAS_RANGE_MASK;
-
-            let (temperature, t_fine) = calc::temperature(&self.calibration_data, adc_temperature);
-
-            Ok((
-                Readings {
-                    status,
-                    temperature,
-                    pressure: calc::pressure(&self.calibration_data, t_fine, adc_pressure),
-                    humidity: calc::humidity(&self.calibration_data, t_fine, adc_humidity as u16),
-                    gas_resistance: calc::gas_resistance(
-                        self.calibration_data.range_sw_err,
-                        adc_gas_resistance as u16,
-                        gas_range as usize,
-                    ),
-                },
-                ReadingsCondition::Changed,
-            ))
-        } else {
-            Ok((
+        if new_data_mask == 0 {
+            return Ok((
                 Readings {
                     status,
                     ..Default::default()
                 },
                 ReadingsCondition::Unchanged,
-            ))
+            ));
         }
+
+        let adc_pressure =
+            ((buf[2] as u32) * 4096) | ((buf[3] as u32) * 16) | ((buf[4] as u32) * 16);
+        let adc_temperature =
+            ((buf[5] as u32) * 4096) | ((buf[6] as u32) * 16) | ((buf[7] as u32) * 16);
+        let adc_humidity = ((buf[8] as u32) * 256) | buf[9] as u32;
+        let adc_gas_resistance = ((buf[13] as u32) * 4) | ((buf[14] as u32) * 64);
+        let gas_range = buf[14] & GAS_RANGE_MASK;
+
+        let (temperature, t_fine) = calc::temperature(&self.calibration_data, adc_temperature);
+
+        Ok((
+            Readings {
+                status,
+                temperature,
+                pressure: calc::pressure(&self.calibration_data, t_fine, adc_pressure),
+                humidity: calc::humidity(&self.calibration_data, t_fine, adc_humidity as u16),
+                gas_resistance: calc::gas_resistance(
+                    self.calibration_data.range_sw_err,
+                    adc_gas_resistance as u16,
+                    gas_range as usize,
+                ),
+            },
+            ReadingsCondition::Changed,
+        ))
     }
 }
 

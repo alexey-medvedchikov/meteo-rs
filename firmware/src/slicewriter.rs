@@ -1,4 +1,4 @@
-use core::{slice, str};
+use core::str;
 use ufmt::uWrite;
 
 pub enum WriteError {
@@ -15,9 +15,8 @@ impl<'a> SliceWriter<'a> {
         Self { buf, pos: 0 }
     }
 
-    pub(crate) fn as_str(&self) -> &'a str {
-        let ptr = self.buf.as_ptr().cast::<u8>();
-        unsafe { str::from_utf8_unchecked(slice::from_raw_parts(ptr, self.pos)) }
+    pub(crate) fn position(&self) -> usize {
+        self.pos
     }
 }
 

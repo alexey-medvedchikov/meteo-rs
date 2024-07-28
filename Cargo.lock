@@ -319,6 +319,7 @@ dependencies = [
  "display-interface",
  "embedded-graphics",
  "embedded-hal 1.0.0",
+ "num-traits",
  "ssd1306",
  "ufmt",
 ]

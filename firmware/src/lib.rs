@@ -10,6 +10,7 @@ use bme680_rs::{
     air_quality_index, Bme680, GasSettings, IIRFilter, Oversampling, PowerMode, Readings, Settings,
     TemperatureSettings, I2C_SECONDARY_ADDR,
 };
+use core::str;
 use display_interface::DisplayError;
 use embedded_graphics::{
     mono_font::{ascii::FONT_7X13, MonoTextStyle},
@@ -19,7 +20,7 @@ use embedded_graphics::{
 };
 use embedded_hal::i2c;
 use ssd1306::{mode::BufferedGraphicsMode, prelude::*, I2CDisplayInterface, Ssd1306};
-use ufmt::uwriteln;
+use ufmt::uwrite;
 
 type Display<I2C, SIZE> = Ssd1306<I2CInterface<I2C>, SIZE, BufferedGraphicsMode<SIZE>>;
 type Sensor<'a, I2C> = Bme680<'a, I2C>;
@@ -68,18 +69,29 @@ where
         let humidity = Decimal::new(humidity, 3);
 
         let mut buf = [b' '; 128];
-        let msg = {
+        let buf_pos = {
             let mut writer = SliceWriter::new(&mut buf);
-            uwriteln!(writer, "Temp: {} C", temp)?;
-            uwriteln!(writer, "Pres: {} Pa", pressure)?;
-            uwriteln!(writer, "Humd: {} %", humidity)?;
-            uwriteln!(writer, "AQI:  {}", aqi)?;
-            uwriteln!(writer, "Gas:  {} Ohm", gas_resist)?;
-            writer.as_str()
+            uwrite!(
+                writer,
+                "Temp: {} C\nPres: {} Pa\nHumd: {} %\nAQI:  {}\nGas:  {} Ohm",
+                temp,
+                pressure,
+                humidity,
+                aqi,
+                gas_resist
+            )?;
+            writer.position()
         };
 
         display.clear_buffer();
-        Text::with_baseline(msg, Point::zero(), text_style, Baseline::Top).draw(display)?;
+
+        Text::with_baseline(
+            unsafe { str::from_utf8_unchecked(&buf[0..buf_pos]) },
+            Point::zero(),
+            text_style,
+            Baseline::Top,
+        )
+        .draw(display)?;
         display.flush()?;
     }
 }
