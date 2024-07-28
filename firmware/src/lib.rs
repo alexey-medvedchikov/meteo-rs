@@ -1,10 +1,9 @@
 #![cfg_attr(not(test), no_std)]
 
+mod byteswriter;
 mod decimal;
-mod slicewriter;
 
 use crate::decimal::Decimal;
-use crate::slicewriter::{SliceWriter, WriteError};
 
 use bme680_rs::{
     air_quality_index, Bme680, GasSettings, IIRFilter, Oversampling, PowerMode, Readings, Settings,
@@ -19,7 +18,7 @@ use embedded_graphics::{
 };
 use embedded_hal::i2c;
 use ssd1306::{mode::BufferedGraphicsMode, prelude::*, I2CDisplayInterface, Ssd1306};
-use ufmt::uwriteln;
+use ufmt::uwrite;
 
 type Display<I2C, SIZE> = Ssd1306<I2CInterface<I2C>, SIZE, BufferedGraphicsMode<SIZE>>;
 type Sensor<'a, I2C> = Bme680<'a, I2C>;
@@ -41,45 +40,50 @@ where
     let text_style = MonoTextStyle::new(&FONT_7X13, BinaryColor::On);
 
     loop {
-        let mut gas_resist_vec = [0; STEPS_SMOOTH];
-        let mut last_data = Readings::default();
+        let mut samples = [Readings::default(); STEPS_SMOOTH];
+        let mut samples_num = 0;
 
-        let mut step = 0;
-        while step < STEPS_SMOOTH {
+        for _ in 0..STEPS_SMOOTH {
             sensor.set_power_mode(&mut DelayMsWrapper(delay), PowerMode::Forced)?;
             let (data, state) = sensor.get_readings()?;
 
             if state == bme680_rs::ReadingsCondition::Changed {
-                gas_resist_vec[step] = data.gas_resistance();
-                last_data = data;
-                step += 1;
+                samples[samples_num] = data;
+                samples_num += 1;
             }
 
             callback(delay);
         }
 
-        let pressure = last_data.pressure();
-        let temp = last_data.temperature();
-        let humidity = last_data.humidity();
-        let gas_resist = gas_resist_vec.iter().sum::<u32>() / gas_resist_vec.len() as u32;
-        let aqi = air_quality_index(humidity, gas_resist);
-        let aqi = Decimal::new(aqi, 3);
-        let temp = Decimal::new(temp, 2);
-        let humidity = Decimal::new(humidity, 3);
+        let mut pressure = 0;
+        let mut temperature = 0;
+        let mut humidity = 0;
+        let mut gas_resistance = 0;
+
+        for data in &samples[..samples_num] {
+            pressure += data.pressure();
+            temperature += data.temperature() as i32;
+            humidity += data.humidity();
+            gas_resistance += data.gas_resistance();
+        }
+
+        let humidity = humidity / samples_num as u32;
+        let gas_resistance = gas_resistance / samples_num as u32;
 
         let mut buf = [b' '; 128];
-        let msg = {
-            let mut writer = SliceWriter::new(&mut buf);
-            uwriteln!(writer, "Temp: {} C", temp)?;
-            uwriteln!(writer, "Pres: {} Pa", pressure)?;
-            uwriteln!(writer, "Humd: {} %", humidity)?;
-            uwriteln!(writer, "AQI:  {}", aqi)?;
-            uwriteln!(writer, "Gas:  {} Ohm", gas_resist)?;
-            writer.as_str()
-        };
+        let mut w = byteswriter::BytesWriter::new(&mut buf);
+        uwrite!(
+            w,
+            "Temp: {} C\nPres: {} Pa\nHumd: {} %\nAQI:  {}\nGas:  {} Ohm",
+            Decimal::new((temperature / samples_num as i32) as i16, 2),
+            pressure / samples_num as u32,
+            Decimal::new(humidity, 3),
+            Decimal::new(air_quality_index(humidity, gas_resistance), 3),
+            gas_resistance,
+        )?;
 
         display.clear_buffer();
-        Text::with_baseline(msg, Point::zero(), text_style, Baseline::Top).draw(display)?;
+        Text::with_baseline(w.as_str(), Point::zero(), text_style, Baseline::Top).draw(display)?;
         display.flush()?;
     }
 }
@@ -132,10 +136,11 @@ where
     Ok(sensor)
 }
 
+#[derive(Clone, Debug)]
 pub enum Error<BusError> {
     Sensor(bme680_rs::Error<BusError>),
     Display(DisplayError),
-    OutOfBounds(WriteError),
+    OutOfBounds(byteswriter::OutOfBoundsError),
 }
 
 impl<BusError> From<bme680_rs::Error<BusError>> for Error<BusError> {
@@ -150,8 +155,8 @@ impl<BusError> From<DisplayError> for Error<BusError> {
     }
 }
 
-impl<BusError> From<WriteError> for Error<BusError> {
-    fn from(value: WriteError) -> Self {
+impl<BusError> From<byteswriter::OutOfBoundsError> for Error<BusError> {
+    fn from(value: byteswriter::OutOfBoundsError) -> Self {
         Error::OutOfBounds(value)
     }
 }

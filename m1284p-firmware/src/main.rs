@@ -19,9 +19,7 @@ fn TIMER1_COMPA() {}
 #[device::entry]
 fn main() -> ! {
     loop {
-        unsafe {
-            run().unwrap_unchecked();
-        }
+        unsafe { run().unwrap_unchecked() };
     }
 }
 
@@ -30,7 +28,7 @@ fn run() -> Result<(), firmware::Error<hal::i2c::Error>> {
     configure_power(&dp);
 
     let mut display = firmware::display_acquire(i2c_acquire::<Clock>())?;
-    let mut delay = Delay(hal::delay::Delay::<Clock>::new());
+    let mut delay = DelayMs(hal::delay::Delay::<Clock>::new());
     let mut i2c = i2c_acquire::<Clock>();
     let mut sensor = firmware::sensor_acquire(&mut i2c, &mut delay)?;
 
@@ -90,10 +88,10 @@ where
     )
 }
 
-struct Delay(hal::delay::Delay<Clock>);
+struct DelayMs(hal::delay::Delay<Clock>);
 
-impl firmware::DelayMs for Delay {
+impl firmware::DelayMs for DelayMs {
     fn delay_ms(&mut self, ms: u16) {
-        self.0.delay_ms(ms)
+        self.0.delay_ms(ms);
     }
 }
