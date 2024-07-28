@@ -2,7 +2,7 @@
 
 use core::convert::TryFrom;
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Error {
     PowerMode(u8),
     Oversampling(u8),
@@ -111,7 +111,7 @@ impl Default for IIRFilter {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum HeaterControl {
     H0 = 0,
     H1 = 1,
@@ -187,7 +187,7 @@ impl Default for NBConversion {
     }
 }
 
-#[derive(Clone, Copy, Debug, Default, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct TemperatureSettings {
     pub humidity_oversampling: Oversampling,
     pub temperature_oversampling: Oversampling,
@@ -195,17 +195,17 @@ pub struct TemperatureSettings {
     pub iir_filter: IIRFilter,
 }
 
-#[derive(Clone, Copy, Debug, Default, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct GasSettings {
+    pub heater_duration_ms: u32,
+    pub heater_temperature: u16,
+    pub ambient_temperature: i8,
     pub nb_conversion: NBConversion,
     pub heater_control: HeaterControl,
     pub enable_gas_measurement: bool,
-    pub heater_temperature: u16,
-    pub heater_duration_ms: u32,
-    pub ambient_temperature: i8,
 }
 
-#[derive(Clone, Copy, Debug, Default, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq)]
 pub struct Settings {
     pub gas: GasSettings,
     pub temperature: TemperatureSettings,

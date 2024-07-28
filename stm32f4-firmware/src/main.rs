@@ -15,15 +15,18 @@ fn main() -> ! {
     }
 }
 
+const SYSCLK_RATE_MHZ: u32 = 8;
+const I2C_RATE_KHZ: u32 = 400;
+
 fn run() -> Result<(), firmware::Error<hal::i2c::Error>> {
-    let sysclk_rate = 8.MHz();
-    let i2c_rate = 400.kHz();
+    let sysclk_rate = SYSCLK_RATE_MHZ.MHz();
+    let i2c_rate = I2C_RATE_KHZ.kHz();
 
     let mut delay = {
         let dp = unsafe { hal::pac::Peripherals::steal() };
         let rcc = dp.RCC.constrain();
         let clocks = rcc.cfgr.sysclk(sysclk_rate).freeze();
-        Delay(dp.TIM2.delay_ms(&clocks))
+        DelayMs(dp.TIM2.delay_ms(&clocks))
     };
 
     let i2c = i2c_acquire(sysclk_rate, i2c_rate);
@@ -46,9 +49,9 @@ fn i2c_acquire(sysclk_rate: HertzU32, i2c_rate: HertzU32) -> hal::i2c::I2c<hal::
     hal::i2c::I2c::new(dp.I2C1, (scl, sda), i2c_rate, &clocks)
 }
 
-struct Delay(hal::timer::DelayMs<hal::pac::TIM2>);
+struct DelayMs(hal::timer::DelayMs<hal::pac::TIM2>);
 
-impl firmware::DelayMs for Delay {
+impl firmware::DelayMs for DelayMs {
     fn delay_ms(&mut self, ms: u16) {
         self.0.delay_ms(ms as u32)
     }
