@@ -36,7 +36,7 @@ fn run() -> Result<(), firmware::Error<hal::i2c::Error>> {
 
     unsafe { avr_device::interrupt::enable() };
     firmware::run(&mut display, &mut sensor, &mut delay, |_| {
-        dp.CPU.smcr.write(|w| {
+        dp.CPU.smcr().write(|w| {
             w.sm().idle();
             w.se().set_bit();
             w
@@ -47,18 +47,18 @@ fn run() -> Result<(), firmware::Error<hal::i2c::Error>> {
 }
 
 fn timer1_init(timer: &hal::pac::TC1) {
-    timer.tccr1b.write(|w| {
+    timer.tccr1b().write(|w| {
         w.cs1().prescale_1024();
-        w.wgm1().bits(0b01);
+        w.wgm1().set(0b01);
         w
     });
 
-    timer.ocr1a.write(|w| w.bits(7812)); // ~1.000064s at 8Mhz
-    timer.timsk1.write(|w| w.ocie1a().set_bit());
+    timer.ocr1a().write(|w| w.set(7812)); // ~1.000064s at 8Mhz
+    timer.timsk1().write(|w| w.ocie1a().set_bit());
 }
 
 fn configure_power(dp: &hal::Peripherals) {
-    dp.CPU.prr0.write(|w| {
+    dp.CPU.prr0().write(|w| {
         w.pradc().set_bit();
         w.prspi().set_bit();
         w.prtim0().set_bit();
@@ -68,7 +68,7 @@ fn configure_power(dp: &hal::Peripherals) {
         w
     });
 
-    dp.CPU.prr1.write(|w| {
+    dp.CPU.prr1().write(|w| {
         w.prtim3().set_bit();
         w
     });

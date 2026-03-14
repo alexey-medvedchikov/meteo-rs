@@ -24,9 +24,8 @@ fn run() -> Result<(), firmware::Error<hal::i2c::Error>> {
 
     let mut delay = {
         let dp = unsafe { hal::pac::Peripherals::steal() };
-        let rcc = dp.RCC.constrain();
-        let clocks = rcc.cfgr.sysclk(sysclk_rate).freeze();
-        DelayMs(dp.TIM2.delay_ms(&clocks))
+        let mut rcc = dp.RCC.freeze(hal::rcc::Config::hsi().sysclk(sysclk_rate));
+        DelayMs(dp.TIM2.delay_ms(&mut rcc))
     };
 
     let i2c = i2c_acquire(sysclk_rate, i2c_rate);
@@ -41,12 +40,11 @@ fn run() -> Result<(), firmware::Error<hal::i2c::Error>> {
 
 fn i2c_acquire(sysclk_rate: HertzU32, i2c_rate: HertzU32) -> hal::i2c::I2c<hal::pac::I2C1> {
     let dp = unsafe { hal::pac::Peripherals::steal() };
-    let rcc = dp.RCC.constrain();
-    let clocks = rcc.cfgr.sysclk(sysclk_rate).freeze();
-    let gpiob = dp.GPIOB.split();
+    let mut rcc = dp.RCC.freeze(hal::rcc::Config::hsi().sysclk(sysclk_rate));
+    let gpiob = dp.GPIOB.split(&mut rcc);
     let scl = gpiob.pb8;
     let sda = gpiob.pb9;
-    hal::i2c::I2c::new(dp.I2C1, (scl, sda), i2c_rate, &clocks)
+    hal::i2c::I2c::new(dp.I2C1, (scl, sda), i2c_rate, &mut rcc)
 }
 
 struct DelayMs(hal::timer::DelayMs<hal::pac::TIM2>);
